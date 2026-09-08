@@ -4,6 +4,7 @@ import com.mugide.cafe_popp_backend.dto.OrderDto;
 import com.mugide.cafe_popp_backend.enums.OrderStatus;
 import com.mugide.cafe_popp_backend.service.OrderService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,7 +20,8 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderDto createOrder(@RequestParam Long tableId, @RequestParam Long staffId) {
+    public OrderDto createOrder(@RequestParam Long tableId,
+                                @RequestParam(required = false) Long staffId) {
         return orderService.createOrder(tableId, staffId);
     }
 
@@ -41,13 +43,26 @@ public class OrderController {
         return orderService.calculateOrderTotal(orderId);
     }
 
+    @GetMapping("/{orderId}")
+    public OrderDto getOrder(@PathVariable Long orderId) {
+        return orderService.getOrderById(orderId);
+    }
+
     @PatchMapping("/{orderId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER', 'KITCHEN')")
     public OrderDto updateStatus(@PathVariable Long orderId, @RequestParam OrderStatus newStatus) {
         return orderService.updateStatus(orderId, newStatus);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER', 'KITCHEN')")
     public List<OrderDto> getOrdersByStatus(@RequestParam OrderStatus status) {
         return orderService.getOrdersByStatus(status);
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER', 'KITCHEN')")
+    public List<OrderDto> getAllOrders() {
+        return orderService.getAllOrders();
     }
 }

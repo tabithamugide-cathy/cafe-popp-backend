@@ -67,16 +67,37 @@ public class OrderService {
     public OrderDto createOrder(Long tableId, Long staffId) {
         DiningTable table = diningTableRepository.findById(tableId)
                 .orElseThrow(() -> new RuntimeException("Table not found: " + tableId));
-        AppUser staff = appUserRepository.findById(staffId)
-                .orElseThrow(() -> new RuntimeException("Staff not found: " + staffId));
+                AppUser staff = staffId == null
+                                ? getOrCreateGuestOrderUser()
+                                : appUserRepository.findById(staffId)
+                                        .orElseThrow(() -> new RuntimeException("Staff not found: " + staffId));
+
+                if (table.getStatus() != com.mugide.cafe_popp_backend.enums.TableStatus.FREE) {
+                        throw new RuntimeException("Table is not available: " + table.getTableNumber());
+                }
 
         Orders order = new Orders();
         order.setTable(table);
         order.setStaff(staff);
         order.setStatus(OrderStatus.OPEN);
+                table.setStatus(com.mugide.cafe_popp_backend.enums.TableStatus.OCCUPIED);
+                diningTableRepository.save(table);
 
         return toDto(ordersRepository.save(order));
     }
+
+        private AppUser getOrCreateGuestOrderUser() {
+                return appUserRepository.findByEmail("guest-orders@cafe-popp.local")
+                                .orElseGet(() -> {
+                                        AppUser guest = new AppUser();
+                                        guest.setFullName("Guest Orders");
+                                        guest.setEmail("guest-orders@cafe-popp.local");
+                                        guest.setPasswordHash("guest-ordering");
+                                        guest.setRole(com.mugide.cafe_popp_backend.enums.UserRole.WAITER);
+                                        guest.setActive(true);
+                                        return appUserRepository.save(guest);
+                                });
+        }
 
     @Transactional
     public OrderDto addItemToOrder(Long orderId, Long menuItemId, int quantity, String notes) {
@@ -149,10 +170,26 @@ public class OrderService {
         Orders order = ordersRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
         order.setStatus(newStatus);
+                if (newStatus == OrderStatus.PAID) {
+                        order.getTable().setStatus(com.mugide.cafe_popp_backend.enums.TableStatus.FREE);
+                        diningTableRepository.save(order.getTable());
+                }
         return toDto(ordersRepository.save(order));
     }
 
     public List<OrderDto> getOrdersByStatus(OrderStatus status) {
         return ordersRepository.findByStatus(status).stream().map(this::toDto).toList();
     }
+
+        @Transactional(readOnly = true)
+        public OrderDto getOrderById(Long orderId) {
+                Orders order = ordersRepository.findById(orderId)
+                                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+                return toDto(order);
+        }
+
+        @Transactional(readOnly = true)
+        public List<OrderDto> getAllOrders() {
+                return ordersRepository.findAll().stream().map(this::toDto).toList();
+        }
 }

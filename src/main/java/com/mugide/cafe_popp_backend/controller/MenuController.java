@@ -5,6 +5,7 @@ import com.mugide.cafe_popp_backend.entity.Category;
 import com.mugide.cafe_popp_backend.entity.MenuItem;
 import com.mugide.cafe_popp_backend.service.MenuService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -34,11 +35,13 @@ public class MenuController {
     }
 
     @PostMapping("/items")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public MenuItemDto createItem(@RequestBody MenuItem menuItem) {
         return menuService.createMenuItem(menuItem);
     }
 
     @PatchMapping("/items/{id}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public MenuItemDto updateAvailability(@PathVariable Long id, @RequestParam boolean available) {
         return menuService.updateAvailability(id, available);
     }
@@ -49,6 +52,7 @@ public class MenuController {
     }
 
     @PostMapping("/categories")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public Category createCategory(@RequestBody Category category) {
         return menuService.createCategory(category);
     }

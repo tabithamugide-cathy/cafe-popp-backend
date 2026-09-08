@@ -8,12 +8,12 @@ import java.util.List;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category")
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category ORDER BY m.name")
     List<MenuItem> findAll();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.category.id = :categoryId")
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.category.id = :categoryId ORDER BY m.name")
     List<MenuItem> findByCategoryId(Long categoryId);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.available = true")
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.available = true ORDER BY m.name")
     List<MenuItem> findByAvailableTrue();
 }

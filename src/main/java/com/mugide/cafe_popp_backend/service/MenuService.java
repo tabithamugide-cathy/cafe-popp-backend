@@ -5,6 +5,8 @@ import com.mugide.cafe_popp_backend.entity.Category;
 import com.mugide.cafe_popp_backend.entity.MenuItem;
 import com.mugide.cafe_popp_backend.repository.CategoryRepository;
 import com.mugide.cafe_popp_backend.repository.MenuItemRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,10 +34,12 @@ public class MenuService {
         );
     }
 
+    @Cacheable(cacheNames = "menu-items", key = "'all'")
     public List<MenuItemDto> getAllMenuItems() {
         return menuItemRepository.findAll().stream().map(this::toDto).toList();
     }
 
+    @Cacheable(cacheNames = "menu-items", key = "'available'")
     public List<MenuItemDto> getAvailableMenuItems() {
         return menuItemRepository.findByAvailableTrue().stream().map(this::toDto).toList();
     }
@@ -46,10 +50,12 @@ public class MenuService {
         return toDto(item);
     }
 
+    @CacheEvict(cacheNames = "menu-items", allEntries = true)
     public MenuItemDto createMenuItem(MenuItem menuItem) {
         return toDto(menuItemRepository.save(menuItem));
     }
 
+    @CacheEvict(cacheNames = "menu-items", allEntries = true)
     public MenuItemDto updateAvailability(Long id, boolean available) {
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Menu item not found: " + id));
