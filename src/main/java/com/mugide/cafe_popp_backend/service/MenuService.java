@@ -28,7 +28,8 @@ public class MenuService {
                 item.getPrice(),
                 item.isAvailable(),
                 item.getCategory().getId(),
-                item.getCategory().getName()
+                item.getCategory().getName(),
+                item.getImageUrl()
         );
     }
 

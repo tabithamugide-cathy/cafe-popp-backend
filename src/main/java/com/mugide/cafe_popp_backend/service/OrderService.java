@@ -4,6 +4,7 @@ import com.mugide.cafe_popp_backend.dto.OrderDto;
 import com.mugide.cafe_popp_backend.dto.OrderItemDto;
 import com.mugide.cafe_popp_backend.entity.*;
 import com.mugide.cafe_popp_backend.enums.OrderStatus;
+import com.mugide.cafe_popp_backend.enums.TableStatus;
 import com.mugide.cafe_popp_backend.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,10 +108,69 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.OPEN) {
             throw new RuntimeException("Only OPEN orders can be confirmed");
         }
+        if (order.getItems().isEmpty()) {
+            throw new RuntimeException("Cannot confirm an order with no items");
+        }
 
         deductStockForOrder(order);
 
         order.setStatus(OrderStatus.IN_PROGRESS);
+
+        DiningTable table = order.getTable();
+        table.setStatus(TableStatus.OCCUPIED);
+        diningTableRepository.save(table);
+
+        return toDto(ordersRepository.save(order));
+    }
+
+    @Transactional
+    public OrderDto markServed(Long orderId) {
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        if (order.getStatus() != OrderStatus.IN_PROGRESS) {
+            throw new RuntimeException("Only IN_PROGRESS orders can be marked as served");
+        }
+
+        order.setStatus(OrderStatus.SERVED);
+        return toDto(ordersRepository.save(order));
+    }
+    @Transactional
+    public OrderDto removeItemFromOrder(Long orderId, Long orderItemId) {
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        if (order.getStatus() != OrderStatus.OPEN) {
+            throw new RuntimeException("Can only remove items from an OPEN order");
+        }
+
+        boolean removed = order.getItems().removeIf(item -> item.getId().equals(orderItemId));
+        if (!removed) {
+            throw new RuntimeException("Order item not found: " + orderItemId);
+        }
+
+        return toDto(ordersRepository.save(order));
+    }
+
+    @Transactional
+    public OrderDto updateItemQuantity(Long orderId, Long orderItemId, int newQuantity) {
+        if (newQuantity <= 0) {
+            throw new RuntimeException("Quantity must be greater than zero");
+        }
+
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        if (order.getStatus() != OrderStatus.OPEN) {
+            throw new RuntimeException("Can only update items on an OPEN order");
+        }
+
+        OrderItem item = order.getItems().stream()
+                .filter(i -> i.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Order item not found: " + orderItemId));
+
+        item.setQuantity(newQuantity);
         return toDto(ordersRepository.save(order));
     }
 
@@ -135,6 +195,7 @@ public class OrderService {
         }
     }
 
+    @Transactional
     public BigDecimal calculateOrderTotal(Long orderId) {
         Orders order = ordersRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
@@ -154,5 +215,18 @@ public class OrderService {
 
     public List<OrderDto> getOrdersByStatus(OrderStatus status) {
         return ordersRepository.findByStatus(status).stream().map(this::toDto).toList();
+    }
+
+
+    @Transactional
+    public OrderDto getOrderById(Long orderId) {
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        return toDto(order);
+    }
+
+    @Transactional
+    public List<OrderDto> getAllOrders() {
+        return ordersRepository.findAll().stream().map(this::toDto).toList();
     }
 }

@@ -9,5 +9,6 @@ public record MenuItemDto(
         BigDecimal price,
         boolean available,
         Long categoryId,
-        String categoryName
+        String categoryName,
+        String imageUrl
 ) {}

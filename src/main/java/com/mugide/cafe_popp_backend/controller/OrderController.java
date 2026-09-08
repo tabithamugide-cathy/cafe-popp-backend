@@ -50,4 +50,32 @@ public class OrderController {
     public List<OrderDto> getOrdersByStatus(@RequestParam OrderStatus status) {
         return orderService.getOrdersByStatus(status);
     }
+
+    @DeleteMapping("/{orderId}/items/{orderItemId}")
+    public OrderDto removeItem(@PathVariable Long orderId, @PathVariable Long orderItemId) {
+        return orderService.removeItemFromOrder(orderId, orderItemId);
+    }
+
+    @PatchMapping("/{orderId}/items/{orderItemId}")
+    public OrderDto updateItemQuantity(@PathVariable Long orderId,
+                                       @PathVariable Long orderItemId,
+                                       @RequestParam int quantity) {
+        return orderService.updateItemQuantity(orderId, orderItemId, quantity);
+    }
+
+    @PostMapping("/{orderId}/serve")
+    public OrderDto markServed(@PathVariable Long orderId) {
+        return orderService.markServed(orderId);
+    }
+    
+
+    @GetMapping("/{orderId}")
+    public OrderDto getOrder(@PathVariable Long orderId) {
+        return orderService.getOrderById(orderId);
+    }
+
+    @GetMapping("/all")
+    public List<OrderDto> getAllOrders() {
+        return orderService.getAllOrders();
+    }
 }
