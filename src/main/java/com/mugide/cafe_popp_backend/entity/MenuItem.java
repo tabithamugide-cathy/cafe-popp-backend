@@ -9,7 +9,10 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "menu_item")
+@Table(name = "menu_item", indexes = {
+    @Index(name = "idx_menu_item_available", columnList = "available"),
+    @Index(name = "idx_menu_item_category", columnList = "category_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
